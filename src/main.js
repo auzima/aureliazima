@@ -2,7 +2,7 @@
 import { createApp } from 'vue'
 import './style.css'
 import App from './App.vue'
-import { Bag } from './class/Bag'
+import { Bag } from './class/Bag'    // <-- garder CET import et supprimer toute classe Bag ici
 
 // --- 1) Monte l'app Vue ---
 createApp(App).mount('#app')
@@ -11,38 +11,80 @@ createApp(App).mount('#app')
 window.addEventListener('DOMContentLoaded', initGame)
 
 function initGame() {
-  // a) Récupération du canvas
   const canvas = document.getElementById('game')
   if (!canvas) {
-    console.warn('Canvas #game non trouvé (as-tu bien <canvas id="game"> dans index.html ?)') 
+    console.warn('Canvas #game non trouvé (as-tu bien <canvas id="game"> dans index.html ?)')
     return
   }
 
-  // b) Contexte 2D (alpha true = fond transparent possible)
   const ctx = canvas.getContext('2d', { alpha: true })
 
-  // c) Mise à l’échelle HiDPI + suivi du redimensionnement
+  // tailles en pixels CSS (pas device)
+  let dpr = 1, cssW = 0, cssH = 0
+  let bag
+
+  // Mise à l’échelle HiDPI + resize
   function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1
-    const rect = canvas.getBoundingClientRect() // taille CSS réelle (ex: 100dvw/100dvh)
-    canvas.width = Math.floor(rect.width * dpr)
-    canvas.height = Math.floor(rect.height * dpr)
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0) // “unités dessin” = pixels CSS
+    dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    cssW = rect.width
+    cssH = rect.height
+    canvas.width  = Math.floor(cssW * dpr)
+    canvas.height = Math.floor(cssH * dpr)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+
+    if (bag && bag.loaded) {
+      // rester centré en bas si on redimensionne
+      bag.setBottomCentered(cssW, cssH)
+    }
   }
   window.addEventListener('resize', resizeCanvas)
   resizeCanvas()
 
-  // d) Crée les objets du jeu
-  const bag = new Bag(100, 100) // ton sac Freitag
+  // --- Contrôles clavier ---
+  const keys = new Set()
+  function onKey(e, down) {
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+      e.preventDefault() // évite le scroll
+    }
+    if (down) keys.add(e.key); else keys.delete(e.key)
+  }
+  window.addEventListener('keydown', e => onKey(e, true))
+  window.addEventListener('keyup',   e => onKey(e, false))
 
-  // e) Boucle de jeu (avec delta time)
+  function inputDirection() {
+    const up    = keys.has('ArrowUp')
+    const down  = keys.has('ArrowDown')
+    const left  = keys.has('ArrowLeft')
+    const right = keys.has('ArrowRight')
+    let x = 0, y = 0
+    if (left)  x -= 1
+    if (right) x += 1
+    if (up)    y -= 1
+    if (down)  y += 1
+    // normalise la diagonale pour vitesse constante
+    if (x !== 0 || y !== 0) {
+      const len = Math.hypot(x, y)
+      x /= len; y /= len
+    }
+    return { x, y }
+  }
+
+  // --- Objet du jeu ---
+  bag = new Bag(0, 0, 250)           // position provisoire
+  bag.onLoaded(() => bag.setBottomCentered(cssW, cssH))  // centre en bas quand image OK
+
+  // --- Boucle de jeu ---
   let last = performance.now()
   function loop(now) {
-    const dt = Math.min((now - last) / 1000, 0.033) // limite le dt
+    const dt = Math.min((now - last) / 1000, 0.033) // ~30ms max
     last = now
 
-    // update(dt) si tu gères un déplacement; ici on ne modifie que le rendu
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    const dir = inputDirection()
+    bag.update(dir, dt, cssW, cssH)
+
+    // clear en unités CSS (ctx est déjà transformé)
+    ctx.clearRect(0, 0, cssW, cssH)
     bag.draw(ctx)
 
     requestAnimationFrame(loop)
