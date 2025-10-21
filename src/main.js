@@ -53,22 +53,22 @@ function initGame() {
   window.addEventListener('keyup',   e => onKey(e, false))
 
   function inputDirection() {
-    const up    = keys.has('ArrowUp')
-    const down  = keys.has('ArrowDown')
-    const left  = keys.has('ArrowLeft')
-    const right = keys.has('ArrowRight')
+    const up    = keys.has('ArrowUp')    || keys.has('w') || keys.has('W')
+    const down  = keys.has('ArrowDown')  || keys.has('s') || keys.has('S')
+    const left  = keys.has('ArrowLeft')  || keys.has('a') || keys.has('A')
+    const right = keys.has('ArrowRight') || keys.has('d') || keys.has('D')
     let x = 0, y = 0
     if (left)  x -= 1
     if (right) x += 1
     if (up)    y -= 1
     if (down)  y += 1
-    // normalise la diagonale pour vitesse constante
     if (x !== 0 || y !== 0) {
       const len = Math.hypot(x, y)
       x /= len; y /= len
     }
     return { x, y }
   }
+  
 
   // --- Objet du jeu ---
   bag = new Bag(0, 0, 250)           // position provisoire
