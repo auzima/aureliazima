@@ -22,27 +22,23 @@ export class InputController {
     }
   
     _isGameKey(k) {
-      return ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D','Shift',' '].includes(k)
+      return ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','a','s','d','W','A','S','D','Shift'].includes(k)
     }
   
-    isDown(k) { return this.keys.has(k) }
-  
-    // Direction normalisée (flèches + WASD), avec sprint Shift
     getDirection() {
-      const up    = this.isDown('ArrowUp')    || this.isDown('w') || this.isDown('W')
-      const down  = this.isDown('ArrowDown')  || this.isDown('s') || this.isDown('S')
-      const left  = this.isDown('ArrowLeft')  || this.isDown('a') || this.isDown('A')
-      const right = this.isDown('ArrowRight') || this.isDown('d') || this.isDown('D')
+      const up    = this.keys.has('ArrowUp')    || this.keys.has('w') || this.keys.has('W')
+      const down  = this.keys.has('ArrowDown')  || this.keys.has('s') || this.keys.has('S')
+      const left  = this.keys.has('ArrowLeft')  || this.keys.has('a') || this.keys.has('A')
+      const right = this.keys.has('ArrowRight') || this.keys.has('d') || this.keys.has('D')
   
       let x = 0, y = 0
       if (left)  x -= 1
       if (right) x += 1
       if (up)    y -= 1
       if (down)  y += 1
-      if (x || y) { const l = Math.hypot(x, y); x /= l; y /= l }
+      if (x || y) { const l = Math.hypot(x, y); x /= l; y /= l } // diagonale constante
   
-      const sprint = this.isDown('Shift') ? 1.8 : 1
-      return { x: x * sprint, y: y * sprint }
+      return { x, y }
     }
   }
   
